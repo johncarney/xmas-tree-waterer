@@ -1,4 +1,4 @@
-#!/user/bin/env python3.10
+#!/user/bin/env python3
 
 from gpiozero import OutputDevice, DistanceSensor
 from gpiozero.pins.pigpio import PiGPIOFactory

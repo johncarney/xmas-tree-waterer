@@ -1,4 +1,4 @@
-#!/user/bin/env python3.10
+#!/user/bin/env python3
 
 import RPi.GPIO as GPIO
 
