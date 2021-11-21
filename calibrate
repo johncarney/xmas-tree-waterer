@@ -11,8 +11,8 @@ sensor = DistanceSensor(trigger=20, echo=21, pin_factory=factory)
 if __name__ == "__main__":
     print("Reading distance")
     sum = 0.0
-    for _ in range(100):
+    for _ in range(500):
         sum = sum + sensor.distance
         time.sleep(0.1)
-    sum = sum / 100
+    sum = sum / 500
     print(f"Distance: {round(sum * 100, 1)}cm")
