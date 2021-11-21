@@ -6,7 +6,7 @@ from gpiozero.pins.pigpio import PiGPIOFactory
 import time
 
 factory = PiGPIOFactory(host="localhost")
-sensor = DistanceSensor(trigger=20, echo=21, pin_factory=factory)
+sensor = DistanceSensor(trigger=23, echo=24, pin_factory=factory)
 
 if __name__ == "__main__":
     print("Reading distance")
