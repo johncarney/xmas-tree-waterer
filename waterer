@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+
+from gpiozero import DistanceSensor, OutputDevice
+from gpiozero.pins.pigpio import PiGPIOFactory
+
+import time
+import yaml
+
+factory = PiGPIOFactory(host="localhost")
+
+def load_config():
+    with open("config.yml", "r") as file:
+        return(yaml.safe_load(file))
+
+config = load_config()
+reservoir_config = config["reservoir"]
+planter_config = config["planter"]
+pump_config = config["pump"]
+
+reservoir = DistanceSensor(trigger=reservoir_config["trigger"], echo=reservoir_config["echo"], pin_factory=factory)
+planter = DistanceSensor(trigger=planter_config["trigger"], echo=planter_config["echo"], pin_factory=factory)
+pump = OutputDevice(pump_config["switch"], active_high=True, initial_value=False, pin_factory=factory)
+
+def reservoir_level():
+    return round(reservoir.distance * 100, 1)
+
+def planter_level():
+    return round(planter.distance * 100, 1)
+
+def reservoir_empty():
+    return reservoir_level() > reservoir_config["min_level"]
+
+def reservoir_full():
+    return reservoir_level() < reservoir_config["max_level"]
+
+def planter_empty():
+    return planter_level() > planter_config["min_level"]
+
+def planter_full():
+    return planter_level() < planter_config["max_level"]
+
+def planter_low():
+    return planter_level() > planter_config["low_level"]
+
+def water():
+    state = "idle"
+    try:
+        while True:
+            time.sleep(0.1)
+            if state != "empty" and reservoir_empty():
+                print("Reservoir empty")
+                state = "empty"
+                pump.off()
+            elif state == "empty" and not(reservoir_empty()):
+                print("Reservoir no longer empty")
+                state = "idle"
+            elif state == "idle" and planter_low():
+                print("Planter low")
+                state = "filling"
+                pump.on()
+            elif state == "filling" and planter_full():
+                print("Planter full")
+                state = "idle"
+                pump.off()
+            time.sleep(0.1)
+    finally:
+        pump.off()
+
+if __name__ == "__main__":
+    water()
