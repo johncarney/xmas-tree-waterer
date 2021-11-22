@@ -90,7 +90,7 @@ def water():
                 state = "idle"
                 print("Planter full")
                 pump.off()
-            elif state == "idle"
+            elif state == "idle":
                 print(f"Reservoir level: {reservoir_level()}cm / {reservoir_volume(reservoir_level())}qt")
                 print(f"Planter level:   {planter_level()}cm")
 
