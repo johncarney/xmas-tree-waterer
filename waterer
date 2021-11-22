@@ -54,7 +54,7 @@ def planter_low():
 def log_filling_event(reason, start_time, reservoir_start):
     end_time = datetime.utcnow()
     reservoir_end = reservoir_level()
-    with open("water-log.csv", "a") as f:
+    with open("/home/pi/water-log.csv", "a") as f:
         f.write(
             start_time.strftime("%F %T.%f"),
             end_time.strftime("%F %T.%f"),
