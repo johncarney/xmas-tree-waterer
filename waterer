@@ -3,12 +3,9 @@
 from gpiozero import DistanceSensor, OutputDevice
 from gpiozero.pins.pigpio import PiGPIOFactory
 from datetime import datetime
-from pytz import timezone
 
 import time
 import yaml
-
-import sqlite3
 
 factory = PiGPIOFactory(host="localhost")
 
