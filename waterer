@@ -2,9 +2,13 @@
 
 from gpiozero import DistanceSensor, OutputDevice
 from gpiozero.pins.pigpio import PiGPIOFactory
+from datetime import datetime
+from pytz import timezone
 
 import time
 import yaml
+
+import sqlite3
 
 factory = PiGPIOFactory(host="localhost")
 
@@ -24,6 +28,11 @@ pump = OutputDevice(pump_config["switch"], active_high=True, initial_value=False
 def reservoir_level():
     return round(reservoir.distance * 100, 1)
 
+def reservoir_volume(level):
+    dv = (reservoir_config["max_volume"] - reservoir_config["min_volume"])
+    dl = (reservoir_config["max_level"] - reservoir_config["min_level"])
+    return((level - reservoir_config["min_level"]) * dv / dl + reservoir_config["min_volume"])
+
 def planter_level():
     return round(planter.distance * 100, 1)
 
@@ -42,27 +51,54 @@ def planter_full():
 def planter_low():
     return planter_level() > planter_config["low_level"]
 
+def log_filling_event(reason, start_time, reservoir_start):
+    end_time = datetime.utcnow()
+    reservoir_end = reservoir_level()
+    with open("water-log.csv", "a") as f:
+        f.write(
+            start_time.strftime("%F %T.%f"),
+            end_time.strftime("%F %T.%f"),
+            reservoir_start,
+            reservoir_end,
+            reservoir_volume(reservoir_start),
+            reservoir_volume(reservoir_end),
+            reason
+        )
+
 def water():
     state = "idle"
+    fill_start_time = None
+    reservoir_start = None
+    delay = 30 * 60
     try:
         while True:
-            time.sleep(0.1)
+            if state == "filling":
+                time.sleep(0.1)
+            elif state == "empty":
+                time.sleep(30 * 60)
+            else:
+                time.sleep(5 * 60)
+
             if state != "empty" and reservoir_empty():
-                print("Reservoir empty")
+                if state == "filling":
+                    log_filling_event("reservoir empty", fill_start_time, reservoir_start)
                 state = "empty"
+                print("Reservoir empty")
                 pump.off()
             elif state == "empty" and not(reservoir_empty()):
                 print("Reservoir no longer empty")
                 state = "idle"
             elif state == "idle" and planter_low():
-                print("Planter low")
+                fill_start_time = datetime.utcnow()
+                reservoir_start = reservoir_level()
                 state = "filling"
+                print("Planter low")
                 pump.on()
             elif state == "filling" and planter_full():
-                print("Planter full")
+                log_filling_event("full", fill_start_time, reservoir_start)
                 state = "idle"
+                print("Planter full")
                 pump.off()
-            time.sleep(0.1)
     finally:
         pump.off()
 
