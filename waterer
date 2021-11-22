@@ -68,19 +68,13 @@ def water():
     reservoir_start = None
     delay = 30 * 60
     try:
+        print("Starting...")
         while True:
-            if state == "filling":
-                time.sleep(0.1)
-            elif state == "empty":
-                time.sleep(30 * 60)
-            else:
-                time.sleep(5 * 60)
-
             if state != "empty" and reservoir_empty():
                 if state == "filling":
                     log_filling_event("reservoir empty", fill_start_time, reservoir_start)
                 state = "empty"
-                print("Reservoir empty")
+                print(f"Reservoir empty ({reservoir_level()}cm, ~{reservoir_volume(reservoir_level())}qt)")
                 pump.off()
             elif state == "empty" and not(reservoir_empty()):
                 print("Reservoir no longer empty")
@@ -96,6 +90,13 @@ def water():
                 state = "idle"
                 print("Planter full")
                 pump.off()
+
+            if state == "filling":
+                time.sleep(0.1)
+            elif state == "empty":
+                time.sleep(30 * 60)
+            else:
+                time.sleep(5 * 60)
     finally:
         pump.off()
 
