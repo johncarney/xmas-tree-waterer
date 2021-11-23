@@ -105,8 +105,7 @@ def water():
                 print("Planter full")
                 print(f"Topped up by ~{reservoir_volume(reservoir_start) - reservoir_volume(reservoir_lvl)}qt")
             elif state == "idle":
-                print(f"Reservoir level: {reservoir_lvl}cm / {reservoir_volume(reservoir_lvl)}qt")
-                print(f"Planter level:   {planter_lvl}cm")
+                print(f"Planter level: {planter_lvl}cm, Reservoir level: {reservoir_lvl}cm / ~{reservoir_volume(reservoir_lvl)}qt")
                 log_levels(reservoir_lvl, planter_lvl)
 
             if state == "filling":
