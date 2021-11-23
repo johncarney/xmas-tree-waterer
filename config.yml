@@ -26,3 +26,7 @@ planter:
 
 pump:
   switch: 5
+
+log:
+  fill-events: /home/pi/water-log.csv
+  levels:      /home/pi/levels.csv

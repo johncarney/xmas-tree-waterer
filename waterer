@@ -17,6 +17,7 @@ config = load_config()
 reservoir_config = config["reservoir"]
 planter_config = config["planter"]
 pump_config = config["pump"]
+log_config = config["log"]
 
 reservoir = DistanceSensor(trigger=reservoir_config["trigger"], echo=reservoir_config["echo"], pin_factory=factory)
 planter = DistanceSensor(trigger=planter_config["trigger"], echo=planter_config["echo"], pin_factory=factory)
@@ -33,24 +34,23 @@ def reservoir_volume(level):
 def planter_level():
     return round(planter.distance * 100, 1)
 
-def reservoir_empty():
-    return reservoir_level() > reservoir_config["min_level"]
+def reservoir_empty(reservoir_lvl):
+    return reservoir_lvl > reservoir_config["min_level"]
 
-def reservoir_full():
-    return reservoir_level() < reservoir_config["max_level"]
+def reservoir_full(reservoir_lvl):
+    return reservoir_lvl < reservoir_config["max_level"]
 
-def planter_empty():
-    return planter_level() > planter_config["min_level"]
+def planter_empty(planter_lvl):
+    return planter_lvl > planter_config["min_level"]
 
-def planter_full():
-    return planter_level() < planter_config["max_level"]
+def planter_full(planter_lvl):
+    return planter_lvl < planter_config["max_level"]
 
-def planter_low():
-    return planter_level() > planter_config["low_level"]
+def planter_low(planter_lvl):
+    return planter_lvl > planter_config["low_level"]
 
-def log_filling_event(reason, start_time, reservoir_start):
+def log_filling_event(reason, start_time, reservoir_start, reservoir_end):
     end_time = datetime.utcnow()
-    reservoir_end = reservoir_level()
     line = "{},{},{},{},{},{},{}\n".format(
         start_time.strftime("%F %T.%f"),
         end_time.strftime("%F %T.%f"),
@@ -60,7 +60,17 @@ def log_filling_event(reason, start_time, reservoir_start):
         reservoir_volume(reservoir_end),
         reason
     )
-    with open("/home/pi/water-log.csv", "a") as f:
+    with open(log_config["fill-events"], "a") as f:
+        f.write(line)
+
+def log_levels(reservoir_lvl, planter_lvl):
+    line = "{},{},{},{}\n".format(
+        datetime.utcnow().strftime("%F %T.%f"),
+        planter_lvl,
+        reservoir_lvl,
+        reservoir_volume(reservoir_lvl)
+    )
+    with open(log_config["levels"], "a") as f:
         f.write(line)
 
 def water():
@@ -71,29 +81,33 @@ def water():
     try:
         print("Starting...")
         while True:
-            if state != "empty" and reservoir_empty():
+            reservoir_lvl = reservoir_level()
+            planter_lvl = planter_level()
+            if state != "empty" and reservoir_empty(reservoir_lvl):
                 if state == "filling":
-                    log_filling_event("reservoir empty", fill_start_time, reservoir_start)
+                    log_filling_event("reservoir empty", fill_start_time, reservoir_start, reservoir_lvl)
                 state = "empty"
-                print(f"Reservoir empty ({reservoir_level()}cm, ~{reservoir_volume(reservoir_level())}qt)")
+                print(f"Reservoir empty ({reservoir_lvl}cm, ~{reservoir_volume(reservoir_lvl)}qt)")
                 pump.off()
-            elif state == "empty" and not(reservoir_empty()):
+            elif state == "empty" and reservoir_full(reservoir_lvl):
                 print("Reservoir no longer empty")
                 state = "idle"
-            elif state == "idle" and planter_low():
+            elif state == "idle" and planter_low(planter_lvl):
                 fill_start_time = datetime.utcnow()
                 reservoir_start = reservoir_level()
                 state = "filling"
                 print("Planter low")
                 pump.on()
-            elif state == "filling" and planter_full():
+            elif state == "filling" and planter_full(planter_lvl):
+                pump.off()
                 log_filling_event("full", fill_start_time, reservoir_start)
                 state = "idle"
                 print("Planter full")
-                pump.off()
+                print(f"Topped up by ~{reservoir_volume(reservoir_start) - reservoir_volume(reservoir_lvl)}qt")
             elif state == "idle":
-                print(f"Reservoir level: {reservoir_level()}cm / {reservoir_volume(reservoir_level())}qt")
-                print(f"Planter level:   {planter_level()}cm")
+                print(f"Reservoir level: {reservoir_lvl}cm / {reservoir_volume(reservoir_lvl)}qt")
+                print(f"Planter level:   {planter_lvl}cm")
+                log_levels(reservoir_lvl, planter_lvl)
 
             if state == "filling":
                 time.sleep(1)
