@@ -83,6 +83,10 @@ def water():
         while True:
             reservoir_lvl = reservoir_level()
             planter_lvl = planter_level()
+            if state == "idle":
+                print(f"Planter level: {planter_lvl}cm, Reservoir level: {reservoir_lvl}cm / ~{round(reservoir_volume(reservoir_lvl), 1)}qt")
+                log_levels(reservoir_lvl, planter_lvl)
+
             if state != "empty" and reservoir_empty(reservoir_lvl):
                 if state == "filling":
                     log_filling_event("reservoir empty", fill_start_time, reservoir_start, reservoir_lvl)
@@ -100,13 +104,10 @@ def water():
                 pump.on()
             elif state == "filling" and planter_full(planter_lvl):
                 pump.off()
-                log_filling_event("full", fill_start_time, reservoir_start)
+                log_filling_event("full", fill_start_time, reservoir_start, reservoir_lvl)
                 state = "idle"
                 print("Planter full")
                 print(f"Topped up by ~{round(reservoir_volume(reservoir_start) - reservoir_volume(reservoir_lvl), 2)}qt")
-            elif state == "idle":
-                print(f"Planter level: {planter_lvl}cm, Reservoir level: {reservoir_lvl}cm / ~{round(reservoir_volume(reservoir_lvl), 1)}qt")
-                log_levels(reservoir_lvl, planter_lvl)
 
             if state == "filling":
                 time.sleep(1)
