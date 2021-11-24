@@ -3,9 +3,8 @@
 from gpiozero import DistanceSensor
 from gpiozero.pins.pigpio import PiGPIOFactory
 
-import time, yaml, sys
-
-factory = PiGPIOFactory(host="localhost")
+import yaml
+import sys
 
 def load_config():
     with open("config.yml", "r") as file:
@@ -13,6 +12,7 @@ def load_config():
 
 if __name__ == "__main__":
     config = load_config()
+    factory = PiGPIOFactory(host="localhost")
     sensor_config = config[sys.argv[1]]
     sensor = DistanceSensor(
         trigger=sensor_config["trigger"],
