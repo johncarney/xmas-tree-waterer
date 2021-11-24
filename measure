@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+
+from gpiozero import DistanceSensor
+from gpiozero.pins.pigpio import PiGPIOFactory
+
+import time, yaml, sys
+
+factory = PiGPIOFactory(host="localhost")
+
+def load_config():
+    with open("config.yml", "r") as file:
+        return(yaml.safe_load(file))
+
+if __name__ == "__main__":
+    config = load_config()
+    sensor_config = config[sys.argv[1]]
+    sensor = DistanceSensor(
+        trigger=sensor_config["trigger"],
+        echo=sensor_config["echo"],
+        pin_factory=factory
+    )
+
+    print(f"Distance: {round(sensor.distance * 100, 1)}cm")
