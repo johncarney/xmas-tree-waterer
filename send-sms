@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+
+from twilio.rest import Client
+
+import yaml
+import sys
+
+def load_config():
+    with open("twilio.yml", "r") as file:
+        return(yaml.safe_load(file))
+
+def send_sms(message, config):
+    client = Client(config["account-sid"], config["auth-token"])
+    sms = client.messages.create(
+        messaging_service_sid=config["messaging-service-sid"],
+        body=f"{message}\n",
+        to=config["to"]
+    )
+    print(sms.sid)
+
+if __name__ == "__main__":
+    send_sms(sys.stdin.read().strip(), load_config())
