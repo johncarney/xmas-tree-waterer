@@ -114,9 +114,11 @@ def water():
                     report_filling_event(reservoir_start, reservoir_lvl)
                 state = "empty"
                 print(f"Reservoir empty ({reservoir_lvl}cm, ~{round(reservoir_volume(reservoir_lvl), 1)}qt)")
+                send_sms(f"Reservoir empty ({reservoir_lvl}cm, ~{round(reservoir_volume(reservoir_lvl), 1)}qt)")
                 pump.off()
             elif state == "empty" and reservoir_full(reservoir_lvl):
                 print("Reservoir no longer empty")
+                send_sms(f"Reservoir filled")
                 state = "idle"
             elif state == "idle" and planter_low(planter_lvl):
                 fill_start_time = datetime.utcnow()
