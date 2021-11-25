@@ -7,6 +7,7 @@ from subprocess import Popen, PIPE, STDOUT
 
 import time
 import yaml
+import sys
 
 factory = PiGPIOFactory(host="localhost")
 
@@ -74,17 +75,23 @@ def log_levels(reservoir_lvl, planter_lvl):
     with open(log_config["levels"], "a") as f:
         f.write(line)
 
+def send_sms(message):
+    try:
+        proc = Popen(["./send-sms"], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+        output = proc.communicate(input=message.encode())[0]
+        if proc.returncode != 0:
+            print(f"Error posting SMS:\n#{output.decode().strip()}", file=sys.stderr)
+        return output.decode().strip()
+    except FileNotFoundError:
+        print("Failed to post SMS", file=sys.stderr)
+        return None
+
 def report_filling_event(reservoir_start, reservoir_end):
     message = "Xmas tree topped up with {}qt. {}qt remaining in reservoir.".format(
         round(reservoir_volume(reservoir_start) - reservoir_volume(reservoir_end), 1),
         round(reservoir_volume(reservoir_end), 1)
     )
-    try:
-        proc = Popen(["./send-sms"], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-        output = proc.communicate(input=message.encode())[0]
-        return output.decode().strip()
-    except FileNotFoundError:
-        return None
+    return send_sms(message)
 
 def water():
     state = "idle"
