@@ -3,6 +3,7 @@
 from gpiozero import DistanceSensor, OutputDevice
 from gpiozero.pins.pigpio import PiGPIOFactory
 from datetime import datetime
+from subprocess import Popen, PIPE, STDOUT
 
 import time
 import yaml
@@ -73,6 +74,18 @@ def log_levels(reservoir_lvl, planter_lvl):
     with open(log_config["levels"], "a") as f:
         f.write(line)
 
+def report_filling_event(reservoir_start, reservoir_end):
+    message = "Xmas tree topped up with {}qt. {}qt remaining in reservoir.".format(
+        round(reservoir_volume(reservoir_start) - reservoir_volume(reservoir_end), 1),
+        round(reservoir_volume(reservoir_end), 1)
+    )
+    try:
+        proc = Popen(["./send-sms"], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+        output = proc.communicate(input=message.encode())[0]
+        return output.decode().strip()
+    except FileNotFoundError:
+        return None
+
 def water():
     state = "idle"
     fill_start_time = None
@@ -90,6 +103,7 @@ def water():
             if state != "empty" and reservoir_empty(reservoir_lvl):
                 if state == "filling":
                     log_filling_event("reservoir empty", fill_start_time, reservoir_start, reservoir_lvl)
+                    report_filling_event(reservoir_start, reservoir_lvl)
                 state = "empty"
                 print(f"Reservoir empty ({reservoir_lvl}cm, ~{round(reservoir_volume(reservoir_lvl), 1)}qt)")
                 pump.off()
@@ -105,6 +119,7 @@ def water():
             elif state == "filling" and planter_full(planter_lvl):
                 pump.off()
                 log_filling_event("full", fill_start_time, reservoir_start, reservoir_lvl)
+                report_filling_event(reservoir_start, reservoir_lvl)
                 state = "idle"
                 print("Planter full")
                 print(f"Topped up by ~{round(reservoir_volume(reservoir_start) - reservoir_volume(reservoir_lvl), 2)}qt")
