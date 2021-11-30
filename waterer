@@ -54,8 +54,8 @@ def planter_low(planter_lvl):
 def log_filling_event(reason, start_time, reservoir_start, reservoir_end):
     end_time = datetime.utcnow()
     line = "{},{},{},{},{},{},{}\n".format(
-        start_time.strftime("%F %T.%f"),
-        end_time.strftime("%F %T.%f"),
+        start_time.strftime("%F %T"),
+        end_time.strftime("%F %T"),
         reservoir_start,
         reservoir_end,
         reservoir_volume(reservoir_start),
@@ -67,7 +67,7 @@ def log_filling_event(reason, start_time, reservoir_start, reservoir_end):
 
 def log_levels(reservoir_lvl, planter_lvl):
     line = "{},{},{},{}\n".format(
-        datetime.utcnow().strftime("%F %T.%f"),
+        datetime.utcnow().strftime("%F %T"),
         planter_lvl,
         reservoir_lvl,
         reservoir_volume(reservoir_lvl)
