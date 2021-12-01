@@ -17,6 +17,14 @@ reservoir:
   - [14.2,  3.0]
   - [15.8,  2.0]
 
+reservoir2:
+  pins:
+    trigger: 20
+    echo:    21
+  levels:
+    min: 15.8
+    max:  3.2
+
 planter:
   trigger: 23
   echo:    24
