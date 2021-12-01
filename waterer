@@ -3,7 +3,7 @@
 from gpiozero import DistanceSensor, OutputDevice
 from gpiozero.pins.pigpio import PiGPIOFactory
 from datetime import datetime
-from subprocess import Popen, PIPE, DEVNULL
+from subprocess import Popen, PIPE, STDOUT
 
 import time
 import yaml
@@ -77,9 +77,11 @@ def log_levels(reservoir_lvl, planter_lvl):
 
 def send_sms(message):
     try:
-        proc = Popen(["./send-sms"], stdin=PIPE, stdout=DEVNULL, stderr=DEVNULL)
-        proc.stdin.write(f"{message}\n".encode())
-        proc.stdin.close()
+        proc = Popen(["./send-sms"], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+        output = proc.communicate(input=message.encode())[0]
+        if proc.returncode != 0:
+            print(f"Error posting SMS:\n#{output.decode().strip()}", file=sys.stderr)
+        return output.decode().strip()
     except FileNotFoundError:
         print("Failed to post SMS", file=sys.stderr)
         return None
