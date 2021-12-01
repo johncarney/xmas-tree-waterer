@@ -37,7 +37,7 @@ class Container:
 
     @property
     def _distance(self):
-        return self._sensor.distance
+        return self._sensor.distance * 100
 
     @property
     def level(self):
