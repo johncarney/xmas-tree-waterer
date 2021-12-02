@@ -24,6 +24,9 @@ reservoir2:
   levels:
     min: 15.8
     max:  3.2
+  volume_map:
+  - [ 3.2, 11.0]
+  - [15.8,  2.0]
 
 planter:
   trigger: 23

@@ -2,7 +2,7 @@ from gpiozero    import DistanceSensor
 from dataclasses import dataclass
 
 @dataclass
-class ContainerSensorLevels:
+class ContainerLevels:
     min:   float
     max:   float
     low:   float = None
@@ -29,11 +29,22 @@ class ContainerSensorLevels:
     def is_full(self, distance):
         return(distance <= self.max)
 
+class ContainerVolumeMap:
+    def __init__(self, map):
+        if map is None:
+            self._map = None
+        else:
+            self._map = sorted(map)
+
+    def volume(self, distance):
+
+        pass
+
 class Container:
-    def __init__(self, pins, levels, volumes=None, pin_factory=None):
+    def __init__(self, pins, levels, volume_map=None, pin_factory=None):
         self._sensor = DistanceSensor(pin_factory=pin_factory, **pins)
-        self._levels = ContainerSensorLevels(**levels)
-        self._volumes = volumes
+        self._levels = ContainerLevels(**levels)
+        self._volume_map = ContainerVolumeMap(volume_map)
 
     @property
     def _distance(self):
