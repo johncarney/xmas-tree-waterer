@@ -77,7 +77,7 @@ def log_levels(reservoir_lvl, planter_lvl):
 
 def send_sms(message):
     try:
-        proc = Popen(["./send-sms"], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+        proc = Popen(["/home/pi/xmas-tree-waterer/send-sms"], stdin=PIPE, stdout=PIPE, stderr=STDOUT)
         output = proc.communicate(input=message.encode())[0]
         if proc.returncode != 0:
             print(f"Error posting SMS:\n#{output.decode().strip()}", file=sys.stderr)

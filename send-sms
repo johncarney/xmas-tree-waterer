@@ -6,7 +6,7 @@ import yaml
 import sys
 
 def load_config():
-    with open("twilio.yml", "r") as file:
+    with open("/home/pi/xmas-tree-waterer/twilio.yml", "r") as file:
         return(yaml.safe_load(file))
 
 def send_sms(message, config):
