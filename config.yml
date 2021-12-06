@@ -1,32 +1,10 @@
 reservoir:
   trigger: 20
   echo:    21
-  min_level:  15.8
-  min_volume:  2.0
-  max_level:   3.2
-  max_volume: 11.0
-  levels:
-  - [ 3.2, 11.0]
-  - [ 4.5, 10.0]
-  - [ 5.7,  9.0]
-  - [ 7.4,  8.0]
-  - [ 9.0,  7.0]
-  - [10.5,  6.0]
-  - [11.7,  5.0]
-  - [12.9,  4.0]
-  - [14.2,  3.0]
-  - [15.8,  2.0]
-
-reservoir2:
-  pins:
-    trigger: 20
-    echo:    21
-  levels:
-    min: 15.8
-    max:  3.2
-  volume_map:
-  - [ 3.2, 11.0]
-  - [15.8,  2.0]
+  min_level:  29.7
+  min_volume:  4.0
+  max_level:   8.8
+  max_volume: 24.0
 
 planter:
   trigger: 23
