@@ -197,8 +197,6 @@ def water():
 
             if state == "filling" or state == "skipping":
                 time.sleep(1)
-            elif state == "empty":
-                time.sleep(30 * 60)
             else:
                 time.sleep(5 * 60)
     finally:
