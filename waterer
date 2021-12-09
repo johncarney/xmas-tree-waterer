@@ -90,7 +90,7 @@ def send_sms(message):
 
 
 def report_filling_event(reason, duration, reservoir_start, reservoir_end):
-    message = "Xmas tree topped up with {}qt in {} seconds. {}qt remaining in reservoir.\nStopped because {}.".format(
+    message = "Xmas tree topped up with {}qt in {} seconds. {}qt remaining in reservoir. Stopped filling because {}.".format(
         round(reservoir_volume(reservoir_start) - reservoir_volume(reservoir_end), 1),
         round(duration.total_seconds(), 0),
         round(reservoir_volume(reservoir_end), 1),
