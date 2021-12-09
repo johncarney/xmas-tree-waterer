@@ -66,21 +66,6 @@ def planter_out_of_range(planter_lvl):
     return not planter_config["range_min"] <= planter_lvl <= planter_config["range_max"]
 
 
-def log_filling_event(reason, start_time, reservoir_start, reservoir_end):
-    end_time = datetime.utcnow()
-    line = "{},{},{},{},{},{},{}\n".format(
-        start_time.strftime("%F %T"),
-        end_time.strftime("%F %T"),
-        reservoir_start,
-        reservoir_end,
-        reservoir_volume(reservoir_start),
-        reservoir_volume(reservoir_end),
-        reason
-    )
-    with open(log_config["fill-events"], "a") as f:
-        f.write(line)
-
-
 def log_levels(reservoir_lvl, planter_lvl):
     line = "{},{},{},{}\n".format(
         datetime.utcnow().strftime("%F %T"),
@@ -104,12 +89,30 @@ def send_sms(message):
         return None
 
 
-def report_filling_event(reservoir_start, reservoir_end):
-    message = "Xmas tree topped up with {}qt. {}qt remaining in reservoir.".format(
+def report_filling_event(reason, duration, reservoir_start, reservoir_end):
+    message = "Xmas tree topped up with {}qt in {} seconds. {}qt remaining in reservoir.\nStopped because {}.".format(
         round(reservoir_volume(reservoir_start) - reservoir_volume(reservoir_end), 1),
-        round(reservoir_volume(reservoir_end), 1)
+        round(duration.total_seconds(), 0),
+        round(reservoir_volume(reservoir_end), 1),
+        reason
     )
     return send_sms(message)
+
+
+def log_filling_event(reason, start_time, reservoir_start, reservoir_end):
+    end_time = datetime.utcnow()
+    report_filling_event(reason, end_time - start_time, reservoir_start, reservoir_end)
+    line = "{},{},{},{},{},{},{}\n".format(
+        start_time.strftime("%F %T"),
+        end_time.strftime("%F %T"),
+        reservoir_start,
+        reservoir_end,
+        reservoir_volume(reservoir_start),
+        reservoir_volume(reservoir_end),
+        reason
+    )
+    with open(log_config["fill-events"], "a") as f:
+        f.write(line)
 
 
 def save_status(state, planter_lvl, reservoir_lvl):
@@ -130,6 +133,7 @@ def water():
     fill_start_time = None
     reservoir_start = None
     prev_planter_lvl = None
+    fill_counter = 0
     try:
         print("Starting...")
         send_sms("Xmas tree waterer started...")
@@ -154,15 +158,14 @@ def water():
                 log_levels(reservoir_lvl, planter_lvl)
 
             if state != "empty" and reservoir_empty(reservoir_lvl):
+                pump.off()
                 if state == "filling":
                     log_filling_event("reservoir empty", fill_start_time, reservoir_start, reservoir_lvl)
-                    report_filling_event(reservoir_start, reservoir_lvl)
                     print(f"Planter level: {planter_lvl}cm, Reservoir level: {reservoir_lvl}cm / ~{round(reservoir_volume(reservoir_lvl), 1)}qt")
                     log_levels(reservoir_lvl, planter_lvl)
                 state = "empty"
                 print(f"Reservoir empty ({reservoir_lvl}cm, ~{round(reservoir_volume(reservoir_lvl), 1)}qt)")
                 send_sms(f"Reservoir empty ({reservoir_lvl}cm, ~{round(reservoir_volume(reservoir_lvl), 1)}qt)")
-                pump.off()
             elif state == "empty" and reservoir_full(reservoir_lvl):
                 print("Reservoir no longer empty")
                 send_sms(f"Reservoir filled")
@@ -171,17 +174,26 @@ def water():
                 fill_start_time = datetime.utcnow()
                 reservoir_start = reservoir_level()
                 state = "filling"
+                fill_counter = 0
                 print("Planter low")
                 pump.on()
             elif state == "filling" and planter_full(planter_lvl):
                 pump.off()
-                log_filling_event("full", fill_start_time, reservoir_start, reservoir_lvl)
-                report_filling_event(reservoir_start, reservoir_lvl)
+                log_filling_event("tree full", fill_start_time, reservoir_start, reservoir_lvl)
                 print(f"Planter level: {planter_lvl}cm, Reservoir level: {reservoir_lvl}cm / ~{round(reservoir_volume(reservoir_lvl), 1)}qt")
                 log_levels(reservoir_lvl, planter_lvl)
                 state = "idle"
                 print("Planter full")
                 print(f"Topped up by ~{round(reservoir_volume(reservoir_start) - reservoir_volume(reservoir_lvl), 2)}qt")
+
+            if state == "filling":
+                fill_counter += 1
+                if fill_counter > 120:
+                    pump.off()
+                    state = "timed out"
+                    log_filling_event("timed out", fill_start_time, reservoir_start, reservoir_lvl)
+                    print(f"Planter level: {planter_lvl}cm, Reservoir level: {reservoir_lvl}cm / ~{round(reservoir_volume(reservoir_lvl), 1)}qt")
+                    log_levels(reservoir_lvl, planter_lvl)
 
             if state == "filling" or state == "skipping":
                 time.sleep(1)

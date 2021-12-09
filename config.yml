@@ -10,8 +10,8 @@ planter:
   trigger: 23
   echo:    24
   min_level: 12.5
-  max_level:  3.5
-  low_level:  6.0
+  max_level:  4.0
+  low_level:  7.0
   range_max: 14.0
   range_min:  3.0
 
