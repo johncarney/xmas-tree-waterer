@@ -11,9 +11,11 @@ import sys
 
 factory = PiGPIOFactory(host="localhost")
 
+
 def load_config():
     with open("/home/pi/xmas-tree-waterer/config.yml", "r") as file:
         return(yaml.safe_load(file))
+
 
 config = load_config()
 reservoir_config = config["reservoir"]
@@ -25,31 +27,44 @@ reservoir = DistanceSensor(trigger=reservoir_config["trigger"], echo=reservoir_c
 planter = DistanceSensor(trigger=planter_config["trigger"], echo=planter_config["echo"], pin_factory=factory)
 pump = OutputDevice(pump_config["switch"], active_high=True, initial_value=False, pin_factory=factory)
 
+
 def reservoir_level():
     return round(reservoir.distance * 100, 1)
+
 
 def reservoir_volume(level):
     dv = (reservoir_config["max_volume"] - reservoir_config["min_volume"])
     dl = (reservoir_config["max_level"] - reservoir_config["min_level"])
     return((level - reservoir_config["min_level"]) * dv / dl + reservoir_config["min_volume"])
 
+
 def planter_level():
     return round(planter.distance * 100, 1)
+
 
 def reservoir_empty(reservoir_lvl):
     return reservoir_lvl > reservoir_config["min_level"]
 
+
 def reservoir_full(reservoir_lvl):
     return reservoir_lvl < reservoir_config["max_level"]
+
 
 def planter_empty(planter_lvl):
     return planter_lvl > planter_config["min_level"]
 
+
 def planter_full(planter_lvl):
     return planter_lvl < planter_config["max_level"]
 
+
 def planter_low(planter_lvl):
     return planter_lvl > planter_config["low_level"]
+
+
+def planter_out_of_range(planter_lvl):
+    return not planter_config["range_min"] <= planter_lvl <= planter_config["range_max"]
+
 
 def log_filling_event(reason, start_time, reservoir_start, reservoir_end):
     end_time = datetime.utcnow()
@@ -65,6 +80,7 @@ def log_filling_event(reason, start_time, reservoir_start, reservoir_end):
     with open(log_config["fill-events"], "a") as f:
         f.write(line)
 
+
 def log_levels(reservoir_lvl, planter_lvl):
     line = "{},{},{},{}\n".format(
         datetime.utcnow().strftime("%F %T"),
@@ -74,6 +90,7 @@ def log_levels(reservoir_lvl, planter_lvl):
     )
     with open(log_config["levels"], "a") as f:
         f.write(line)
+
 
 def send_sms(message):
     try:
@@ -86,6 +103,7 @@ def send_sms(message):
         print("Failed to post SMS", file=sys.stderr)
         return None
 
+
 def report_filling_event(reservoir_start, reservoir_end):
     message = "Xmas tree topped up with {}qt. {}qt remaining in reservoir.".format(
         round(reservoir_volume(reservoir_start) - reservoir_volume(reservoir_end), 1),
@@ -93,12 +111,25 @@ def report_filling_event(reservoir_start, reservoir_end):
     )
     return send_sms(message)
 
+
+def save_status(state, planter_lvl, reservoir_lvl):
+    status = "state: {}\ntree level: {}\nreservoir level: {}\nreserveroir volume: {}\n".format(
+        state,
+        planter_lvl,
+        reservoir_lvl,
+        reservoir_volume(reservoir_lvl)
+    )
+    with open("/home/pi/xmas-tree-waterer/status.txt", "w") as f:
+        f.write(status)
+
+def poll_command(delay):
+    pass
+
 def water():
     state = "idle"
     fill_start_time = None
     reservoir_start = None
     prev_planter_lvl = None
-    prev_state = None
     try:
         print("Starting...")
         send_sms("Xmas tree waterer started...")
@@ -108,16 +139,15 @@ def water():
             if prev_planter_lvl is None:
                 prev_planter_lvl = planter_lvl
 
-            if (planter_lvl - prev_planter_lvl) > 0.6:
-                prev_state = state
+            if (planter_lvl - prev_planter_lvl) > 1:
                 state = "skipping"
                 pump.off()
             else:
                 prev_planter_lvl = planter_lvl
                 if state == "skipping":
-                    state = prev_state
-                    if state == "filling":
-                        pump.on()
+                    state = "idle"
+
+            save_status()
 
             if state == "idle" or state == "skipping":
                 print(f"Planter level: {planter_lvl}cm, Reservoir level: {reservoir_lvl}cm / ~{round(reservoir_volume(reservoir_lvl), 1)}qt")
