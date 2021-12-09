@@ -113,11 +113,11 @@ def report_filling_event(reservoir_start, reservoir_end):
 
 
 def save_status(state, planter_lvl, reservoir_lvl):
-    status = "state: {}\ntree level: {}\nreservoir level: {}\nreserveroir volume: {}\n".format(
+    status = "State: {}\nTree level: {}\nReservoir level: {}\nReservoir volume: {}\n".format(
         state,
         planter_lvl,
         reservoir_lvl,
-        reservoir_volume(reservoir_lvl)
+        round(reservoir_volume(reservoir_lvl), 1)
     )
     with open("/home/pi/xmas-tree-waterer/status.txt", "w") as f:
         f.write(status)
