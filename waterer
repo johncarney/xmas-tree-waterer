@@ -147,7 +147,7 @@ def water():
                 if state == "skipping":
                     state = "idle"
 
-            save_status()
+            save_status(state, planter_lvl, reservoir_lvl)
 
             if state == "idle" or state == "skipping":
                 print(f"Planter level: {planter_lvl}cm, Reservoir level: {reservoir_lvl}cm / ~{round(reservoir_volume(reservoir_lvl), 1)}qt")
