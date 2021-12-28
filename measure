@@ -20,5 +20,6 @@ if __name__ == "__main__":
         echo=sensor_config["echo"],
         pin_factory=factory
     )
-    time.sleep(1)
+    time.sleep(0.25)
     print(f"Distance: {round(sensor.distance * 100, 1)}cm")
+    time.sleep(0.25)
