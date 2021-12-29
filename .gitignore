@@ -2,3 +2,5 @@
 water-log.csv
 levels.csv
 fill-events.csv
+waterer
+__pycache__/

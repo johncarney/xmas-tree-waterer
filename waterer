@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 
-from gpiozero import DistanceSensor, OutputDevice
-from gpiozero.pins.pigpio import PiGPIOFactory
 from datetime import datetime
 from subprocess import Popen, PIPE, STDOUT
+from gpiozero import OutputDevice
+from gpiozero.pins.pigpio import PiGPIOFactory
 
-import time
 import yaml
+import time
 import sys
+import ultrasonics
+
 
 factory = PiGPIOFactory(host="localhost")
 
@@ -23,23 +25,24 @@ planter_config = config["planter"]
 pump_config = config["pump"]
 log_config = config["log"]
 
-reservoir = DistanceSensor(trigger=reservoir_config["trigger"], echo=reservoir_config["echo"], pin_factory=factory)
-planter = DistanceSensor(trigger=planter_config["trigger"], echo=planter_config["echo"], pin_factory=factory)
+
+reservoir = ultrasonics.sensor(reservoir_config["sensor"])
+planter = ultrasonics.sensor(planter_config["sensor"])
 pump = OutputDevice(pump_config["switch"], active_high=True, initial_value=False, pin_factory=factory)
 
 
 def reservoir_level():
-    return round(reservoir.distance * 100, 1)
+    return round(reservoir.distance() * 10.0, 1)
+
+
+def planter_level():
+    return round(planter.distance() * 10.0, 1)
 
 
 def reservoir_volume(level):
     dv = (reservoir_config["max_volume"] - reservoir_config["min_volume"])
     dl = (reservoir_config["max_level"] - reservoir_config["min_level"])
     return((level - reservoir_config["min_level"]) * dv / dl + reservoir_config["min_volume"])
-
-
-def planter_level():
-    return round(planter.distance * 100, 1)
 
 
 def reservoir_empty(reservoir_lvl):
@@ -62,8 +65,19 @@ def planter_low(planter_lvl):
     return planter_lvl > planter_config["low_level"]
 
 
-def planter_out_of_range(planter_lvl):
-    return not planter_config["range_min"] <= planter_lvl <= planter_config["range_max"]
+def log_filling_event(reason, start_time, reservoir_start, reservoir_end):
+    end_time = datetime.utcnow()
+    line = "{},{},{},{},{},{},{}\n".format(
+        start_time.strftime("%F %T"),
+        end_time.strftime("%F %T"),
+        reservoir_start,
+        reservoir_end,
+        reservoir_volume(reservoir_start),
+        reservoir_volume(reservoir_end),
+        reason
+    )
+    with open(log_config["fill-events"], "a") as f:
+        f.write(line)
 
 
 def log_levels(reservoir_lvl, planter_lvl):
@@ -125,8 +139,6 @@ def save_status(state, planter_lvl, reservoir_lvl):
     with open("/home/pi/xmas-tree-waterer/status.txt", "w") as f:
         f.write(status)
 
-def poll_command(delay):
-    pass
 
 def water():
     state = "idle"
@@ -201,6 +213,7 @@ def water():
                 time.sleep(5 * 60)
     finally:
         pump.off()
+
 
 if __name__ == "__main__":
     water()

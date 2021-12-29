@@ -1,14 +1,16 @@
 reservoir:
-  trigger: 20
-  echo:    21
+  sensor:
+    trigger: 20
+    echo:    21
   min_level:  15.0
   min_volume:  3.0
   max_level:   4.7
   max_volume: 10.0
 
 planter:
-  trigger: 23
-  echo:    24
+  sensor:
+    trigger: 23
+    echo:    24
   min_level: 12.5
   max_level:  4.0
   low_level:  6.0
